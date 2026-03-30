@@ -1,15 +1,14 @@
+from __future__ import annotations
 from collections import deque
-#for graphs with heuristic value and path cost
-class Node:
-    def __init__(self, data, h):
-        self.data=data
-        self.h=h
-        self.links=[]
-        self.cost=[]
 
-    def addLink(self, node, cost):
-        self.links.append(node)
-        self.cost.append(cost)
+class Node:
+    def __init__(self, data: str, heuristic:int=0):
+        self.data=data
+        self.h=heuristic
+        self.links:deque[tuple[Node, int]]=deque()
+    
+    def addLink(self, node:Node, cost:int):
+        self.links.append((node, cost))
     
     def __str__(self):
         return f"{self.data} "
@@ -17,137 +16,62 @@ class Node:
     def __repr__(self):
         return f"{self.data} "
 
-    
 class Graph:
-    def __init__(self):
-        self.s=Node('s',7)
-        self.a=Node('a',6)
-        self.b=Node('b',5)
-        self.c=Node('c',4)
-        self.d=Node('d',3)
-        self.e=Node('e',2)
-        self.g=Node('g',0)
+    def __init__(self,matrix:dict, root:str):
+        self.root=self.createGraph(matrix, root)
 
-        self.s.addLink(self.a,1)
-        self.s.addLink(self.b,4)
-        self.a.addLink(self.s,1)
-        self.a.addLink(self.c,2)
-        self.a.addLink(self.d,5)
-        self.b.addLink(self.s,4)
-        self.b.addLink(self.d,2)
-        self.c.addLink(self.a,2)
-        self.c.addLink(self.e,3)
-        self.d.addLink(self.a,5)
-        self.d.addLink(self.b,2)
-        self.d.addLink(self.e,1)
-        self.d.addLink(self.g,6)
-        self.e.addLink(self.c,3)
-        self.e.addLink(self.d,1)
-        self.e.addLink(self.g,2)
-        self.g.addLink(self.d,6)
-        self.g.addLink(self.e,2)
-
-    def breathFirstSearch(self):
-        start=self.s
-        goal='g'
-
+    def createGraph(self, matrix:dict, root:str,)->Node:
+        for key in matrix:
+            node=Node(key)
+            matrix[key].append(node)
+        # all the nodes has been created in above for loop
+        # now create the links between the nodes
+        for key in matrix:
+            for i in range(len(matrix[key])-1):
+                st=matrix[key][i][0]
+                linkNode=matrix[st][-1]
+                cost=matrix[key][i][1]
+                matrix[key][-1].addLink(linkNode,cost)
+        # print(matrix)
+        # if matrix['e'][-1] in matrix['c'][-1].links
+        return matrix[root][-1]
+    
+    def breathFirstSearch(self, goal:str)->Node:
+        start:Node=self.root
+        # print(type(start.data))
         queue=deque()
         queue.append(start)
-        explored=deque()
+        explore=deque()
 
         while queue:
-            print(f"stack: {str(queue):<25}explored: {str(explored):<40}")
-
-            node=queue.popleft()
-
+            print(f"queue:{queue}   explore:{explore}")
+            node:Node=queue.popleft()
             if node.data==goal:
-                return True
-            
-            explored.append(node)
+                return node
+            explore.append(node)
 
-            for n in node.links:
-                if n not in explored and n not in queue:
-                    queue.append(n)
+            for i in node.links:
+                # print(f"i:{i} queue:{queue}   explore:{explore}")
+                if i[0] not in explore and i[0] not in queue:
+                    queue.append(i[0])
         else:
-            return False
-        
-    def depthFirstSearch(self):
-        start=self.s
-        goal='g'
-
-        stack=deque()
-        stack.append(start)
-        explored=deque()
-
-        while stack:
-            print(f"stack: {str(stack):<25}explored: {str(explored):<40}")
-
-            node=stack.pop()
-
-            if node.data==goal:
-                return True
-            
-            explored.append(node)
-
-            for n in node.links:
-                if n not in explored and n not in stack:
-                    stack.append(n)
-        else:
-            return False
-        
-    def heuristicSearch(self):
-        start=self.s
-        goal='g'
-
-        explored=deque()
-        priorityQ=deque()
-        priorityQ.append(start)
-        cost=0
-        
-        while priorityQ:
-            # pop node with lowest heuristic value from priority queue
-            node=priorityQ[0]
-            # for i in priorityQ:
-            #     if i.h<node.h:
-            #         index=node.links.index(i)
-            #         cost+=node.cost[index]
-            #         node=i
-            #         priorityQ.remove(i)
-            
-            for i in range(len(node.links)):
-                if node.links[i].h<node.h:
-                    cost+=node.cost[i]
-                    node=node.links[i]
-                    priorityQ.remove(node.links[i])
-            
-            if node.data==goal:
-                print(f"Cost: {cost}")
-                return True
-            
-            explored.append(node)
-            print(f"stack: {str(priorityQ):<25}explored: {str(explored):<40}")
-            print(node)
-            for n in node.links:
-                if n not in explored and n not in priorityQ:
-                    priorityQ.append(n)
-        else:
-            return False
-            
-            
-
-
-g1=Graph()
-# if g1.breathFirstSearch():
-#     print("element found")
-# if g1.depthFirstSearch():
-#     print("element found")
-if g1.heuristicSearch():
-    print("element found")
-else:
-    print("element Not found")
-
-
+            return None
                     
+matrix={
+    's':[('a',1),('b',4)],
+    'a':[('s',1),('c',2)],
+    'b':[('s',4),('d',2)],
+    'c':[('a',2),('e',3)],
+    'd':[('a',5),('b',2),('e',1)],
+    'e':[('c',3),('d',1),('g',2)],
+    'g':[('d',6),('e',2)],
+}
+
+g1=Graph(matrix, 's')
+
+if g1.breathFirstSearch('g'):
+    print("Found")
+else: print("Not found")
 
 
 
